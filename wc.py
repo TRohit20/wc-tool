@@ -16,6 +16,11 @@ def main():
         help="Print the newline counts"
     )
     parser.add_argument(
+        "-w", "--words",
+        action="store_true",
+        help="Print the word counts"
+    )
+    parser.add_argument(
         "filename",
         nargs="?", # 0 or 1 argument, means filename is optional (for stdin later)
         help="The file to process"
@@ -26,23 +31,45 @@ def main():
     if args.filename:
         try:
             output_to_print = []
+            line_count_val = None
+            word_count_val = None
+            byte_count_val = None
 
+            # Calculate all requested values first
             if args.lines:
                 try:
                     with open(args.filename, 'r') as f:
-                        line_count = sum(1 for _ in f)
-                    output_to_print.append(str(line_count))
+                        line_count_val = sum(1 for _ in f)
                 except Exception as e:
                     print(f"wc: Could not read {args.filename} for line count: {e}", file=sys.stderr)
+            
+            if args.words:
+                try:
+                    with open(args.filename, 'r') as f:
+                        content = f.read()
+                        word_count_val = len(content.split())
+                except Exception as e:
+                    print(f"wc: Could not read {args.filename} for word count: {e}", file=sys.stderr)
 
             if args.bytes:
-                byte_count = os.path.getsize(args.filename)
-                output_to_print.append(str(byte_count))
+                try:
+                    byte_count_val = os.path.getsize(args.filename)
+                except Exception as e: 
+                    print(f"wc: Could not get size of {args.filename}: {e}", file=sys.stderr)
             
-            if not args.lines and not args.bytes:
-                byte_count = os.path.getsize(args.filename)
-                output_to_print.append(str(byte_count))
+            if not args.lines and not args.words and not args.bytes:
+                 byte_count_val = os.path.getsize(args.filename) 
+
+            if args.lines and line_count_val is not None:
+                output_to_print.append(str(line_count_val))
+            if args.words and word_count_val is not None:
+                output_to_print.append(str(word_count_val))
+            if args.bytes and byte_count_val is not None:
+                output_to_print.append(str(byte_count_val))
             
+            if not args.lines and not args.words and not args.bytes and byte_count_val is not None:
+                 output_to_print.append(str(byte_count_val))
+
             if output_to_print:
                 print(" ".join(output_to_print) + f" {args.filename}")
 
@@ -54,6 +81,8 @@ def main():
             sys.exit(1)
     elif args.lines:
         print("Reading from stdin for line count is not yet implemented if -l is specified without a file.", file=sys.stderr)
+    elif args.words:
+        print("Reading from stdin for word count is not yet implemented if -w is specified without a file.", file=sys.stderr)
     elif args.bytes:
         print("Reading from stdin for byte count is not yet implemented if -c is specified without a file.", file=sys.stderr)
 
